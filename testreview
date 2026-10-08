@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algebra 1 STAAR Battle Arena: Linear Functions & Stats</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap');
+        .arcade-font { font-family: 'Press Start 2P', monospace; }
+        .body-font { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="body-font bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-slate-800 border-b border-slate-700 py-4 px-6 shadow-md">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="arcade-font text-yellow-400 text-sm sm:text-lg tracking-wider">⚡ STAAR BATTLE ARENA ⚡</h1>
+                <p class="text-xs text-slate-400 mt-1">Linear Transformations, Correlation & Domain/Range</p>
+            </div>
+            <div id="stats-bar" class="hidden flex items-center gap-6 bg-slate-900 px-4 py-2 rounded-xl border border-slate-700 text-sm">
+                <div>Score: <span id="current-score" class="font-bold text-emerald-400">0</span></div>
+                <div>Streak: <span id="current-streak" class="font-bold text-orange-400">🔥 0</span></div>
+                <div>Question: <span id="current-q-num" class="font-bold text-cyan-400">1</span>/20</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-2xl w-full mx-auto p-4 sm:p-6 my-auto">
+        
+        <!-- Welcome Screen -->
+        <div id="screen-welcome" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 shadow-2xl text-center">
+            <div class="inline-block bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 px-3 py-1 rounded-full text-xs font-semibold mb-4">
+                TEKS A.2(A), A.3(E), A.4(C) Aligned • 20 Questions
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-white">Ready for the Showdown?</h2>
+            <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+                Test your skills across 20 challenge questions in Linear Transformations, Correlation Coefficients, and Domain & Range. Battle for the high score, maintain your streak, and conquer the STAAR test!
+            </p>
+            <div class="mb-6 max-w-xs mx-auto">
+                <label for="player-name" class="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-semibold">Enter Student / Team Name</label>
+                <input type="text" id="player-name" placeholder="e.g. MathMaster99" class="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 text-white text-center focus:outline-none focus:border-yellow-400 transition">
+            </div>
+            <button onclick="startGame()" class="w-full sm:w-auto bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-8 py-3 rounded-xl shadow-lg transition transform hover:-translate-y-0.5 arcade-font text-xs">
+                START BATTLE 🚀
+            </button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="screen-quiz" class="hidden bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 shadow-2xl">
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-700 h-2 rounded-full mb-6 overflow-hidden">
+                <div id="progress-bar" class="bg-cyan-400 h-full transition-all duration-300" style="width: 5%"></div>
+            </div>
+
+            <!-- Question Box -->
+            <div class="mb-6">
+                <span id="question-tag" class="inline-block bg-cyan-400/10 text-cyan-400 border border-cyan-400/20 px-2.5 py-1 rounded-md text-xs font-semibold mb-3">Topic</span>
+                <h3 id="question-text" class="text-lg sm:text-xl font-semibold text-white leading-snug">Question goes here?</h3>
+            </div>
+
+            <!-- Options Grid -->
+            <div id="options-container" class="grid grid-cols-1 gap-3 mb-6">
+                <!-- Dynamically populated options -->
+            </div>
+
+            <!-- Feedback & Rationale Box -->
+            <div id="feedback-box" class="hidden mb-6 p-4 rounded-xl border text-sm">
+                <h4 id="feedback-title" class="font-bold mb-1"></h4>
+                <p id="feedback-rationale" class="text-slate-300"></p>
+            </div>
+
+            <!-- Next Button -->
+            <button id="btn-next" onclick="nextQuestion()" class="hidden w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl shadow-lg transition">
+                Next Question ➔
+            </button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="screen-gameover" class="hidden bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 shadow-2xl text-center">
+            <h2 class="arcade-font text-yellow-400 text-xl mb-3">MISSION ACCOMPLISHED!</h2>
+            <p id="final-player-name" class="text-slate-400 text-sm mb-6">Great job!</p>
+            
+            <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 mb-6 max-w-sm mx-auto">
+                <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Final Score</div>
+                <div id="final-score" class="text-4xl font-black text-emerald-400 mb-4">0 pts</div>
+                <div class="flex justify-around border-t border-slate-800 pt-4 text-sm">
+                    <div>Correct: <span id="final-correct" class="font-bold text-cyan-400">0</span>/20</div>
+                    <div>Max Streak: <span id="final-streak" class="font-bold text-orange-400">0</span></div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button onclick="resetGame()" class="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold px-6 py-3 rounded-xl transition arcade-font text-xs">
+                    PLAY AGAIN 🔄
+                </button>
+                <button onclick="reviewMistakes()" id="btn-review" class="hidden bg-slate-700 hover:bg-slate-600 text-white font-bold px-6 py-3 rounded-xl transition text-sm">
+                    Review Missed Questions 📝
+                </button>
+            </div>
+        </div>
+
+        <!-- Review Screen -->
+        <div id="screen-review" class="hidden bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 shadow-2xl">
+            <h2 class="text-xl font-bold mb-4 text-white">Review Missed Questions</h2>
+            <div id="review-list" class="space-y-4 mb-6 max-h-96 overflow-y-auto pr-2">
+                <!-- Populated dynamically -->
+            </div>
+            <button onclick="backToGameOver()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition">
+                Back to Summary ⬅️
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-slate-500">
+        Algebra 1 STAAR Test Prep • Interactive Self-Checking Arena
+    </footer>
+
+    <!-- Game Logic Script -->
+    <script>
+        const questions = [
+            // Original 10 Questions
+            {
+                tag: "Domain & Range (TEKS A.2A)",
+                question: "What is the domain of the linear function represented by the set of ordered pairs: {(-3, 5), (0, 2), (4, -1), (7, -8)}?",
+                options: [
+                    { text: "{-8, -1, 2, 5}", isCorrect: false, rationale: "This represents the range (y-values), not the domain." },
+                    { text: "{-3, 0, 4, 7}", isCorrect: true, rationale: "The domain is the complete set of all possible input values (x-values)." },
+                    { text: "{-3, 7}", isCorrect: false, rationale: "This only gives the minimum and maximum x-values instead of listing all discrete points." },
+                    { text: "All real numbers", isCorrect: false, rationale: "The relation is discrete points, so the domain is limited to specific x-coordinates." }
+                ],
+                hint: "Remember: Domain is the set of all x-coordinates."
+            },
+            {
+                tag: "Linear Transformations (TEKS A.3E)",
+                question: "How does the graph of g(x) = x - 6 compare to the parent function f(x) = x?",
+                options: [
+                    { text: "Translated 6 units down", isCorrect: true, rationale: "Subtracting 6 outside the function shifts the entire graph vertically downward by 6 units." },
+                    { text: "Translated 6 units up", isCorrect: false, rationale: "Adding a positive constant shifts the graph up; subtracting shifts it down." },
+                    { text: "Translated 6 units right", isCorrect: false, rationale: "A horizontal shift would require subtracting 6 inside parentheses like f(x-6)." },
+                    { text: "Steeper slope by a factor of 6", isCorrect: false, rationale: "The slope remains 1; subtracting 6 is a vertical translation, not a change in slope." }
+                ],
+                hint: "Look at whether the constant is added or subtracted outside of x."
+            },
+            {
+                tag: "Correlation Coefficient (TEKS A.4C)",
+                question: "Which correlation coefficient r indicates the strongest linear relationship between two variables?",
+                options: [
+                    { text: "r = 0.45", isCorrect: false, rationale: "A value of 0.45 shows a weak positive correlation." },
+                    { text: "r = -0.12", isCorrect: false, rationale: "A value close to 0 indicates very little to no linear correlation." },
+                    { text: "r = -0.92", isCorrect: true, rationale: "The strength of a linear relationship is determined by the absolute value of r. |-0.92| = 0.92, which is closest to 1." },
+                    { text: "r = 0.81", isCorrect: false, rationale: "While 0.81 is strong, |-0.92| is closer to 1, indicating a stronger linear fit." }
+                ],
+                hint: "Ignore the negative sign when judging the strength of the correlation."
+            },
+            {
+                tag: "Domain & Range (TEKS A.2A)",
+                question: "A linear function models the height of a candle in centimeters as a function of time in hours. The candle starts at 20 cm and burns completely in 5 hours. What is a reasonable range for this function?",
+                options: [
+                    { text: "0 <= x <= 5", isCorrect: false, rationale: "0 <= x <= 5 represents the reasonable domain (time in hours)." },
+                    { text: "0 <= y <= 20", isCorrect: true, rationale: "The range represents output values (y), which go from a minimum height of 0 cm to a maximum height of 20 cm." },
+                    { text: "x >= 0", isCorrect: false, rationale: "A candle height cannot exceed its initial height of 20 cm or drop below 0 cm." },
+                    { text: "All real numbers", isCorrect: false, rationale: "Real-world situations have practical physical limits for height and time." }
+                ],
+                hint: "Range refers to the output values (y), which here represent the height of the candle."
+            },
+            {
+                tag: "Linear Transformations (TEKS A.3E)",
+                question: "If the parent function f(x) = x is transformed into g(x) = -(3/2)x, what change occurs to the graph?",
+                options: [
+                    { text: "It is reflected across the x-axis and made steeper.", isCorrect: true, rationale: "The negative sign reflects the graph across the x-axis, and the factor of |-3/2| = 1.5 > 1 makes the line steeper." },
+                    { text: "It is shifted down by 3/2 units.", isCorrect: false, rationale: "Multiplying by a coefficient stretches or compresses the line and reflects it; it does not shift it vertically." },
+                    { text: "It is reflected across the y-axis and made less steep.", isCorrect: false, rationale: "Multiplication by a negative number outside x reflects across the x-axis, and 1.5 increases steepness." },
+                    { text: "It is shifted left by 3/2 units.", isCorrect: false, rationale: "Coefficients multiplying x affect slope and reflection, not horizontal translation." }
+                ],
+                hint: "Consider both the negative sign and the magnitude of the coefficient 3/2."
+            },
+            {
+                tag: "Correlation Coefficient (TEKS A.4C)",
+                question: "Data was collected comparing outdoor temperature and hot chocolate sales at a cafe. The correlation coefficient was found to be r = -0.87. Which conclusion is best supported?",
+                options: [
+                    { text: "As temperature increases, hot chocolate sales tend to increase.", isCorrect: false, rationale: "A positive r value would indicate that relationship." },
+                    { text: "As temperature increases, hot chocolate sales tend to decrease.", isCorrect: true, rationale: "A negative correlation coefficient (r = -0.87) indicates a strong inverse relationship where one variable decreases as the other increases." },
+                    { text: "There is no correlation between temperature and hot chocolate sales.", isCorrect: false, rationale: "r = -0.87 is far from 0, indicating a strong relationship." },
+                    { text: "Higher temperatures cause people to buy less hot chocolate due to a mathematical error.", isCorrect: false, rationale: "Correlation does not imply direct causation, though it shows a strong statistical association." }
+                ],
+                hint: "A negative r value means variables move in opposite directions."
+            },
+            {
+                tag: "Domain & Range (TEKS A.2A)",
+                question: "What is the domain of the linear function shown on a graph that is a line segment starting at point (-2, 3) and ending at point (6, 11)?",
+                options: [
+                    { text: "3 <= y <= 11", isCorrect: false, rationale: "This represents the range, as 3 and 11 are the y-values." },
+                    { text: "-2 <= x <= 6", isCorrect: true, rationale: "The domain encompasses all x-values along the line segment, spanning from the leftmost x-coordinate (-2) to the rightmost (6)." },
+                    { text: "-2 <= y <= 6", isCorrect: false, rationale: "Mixing x and y coordinates yields incorrect interval bounds." },
+                    { text: "All real numbers", isCorrect: false, rationale: "Because it is a line segment with defined endpoints, the domain is restricted." }
+                ],
+                hint: "Look only at the horizontal span from the leftmost point to the rightmost point."
+            },
+            {
+                tag: "Linear Transformations (TEKS A.3E)",
+                question: "The graph of f(x) = x  is vertically stretched by a factor of 3 to create g(x). What is the equation for g(x)?",
+                options: [
+                    { text: "g(x) = 3x", isCorrect: true, rationale: "A vertical stretch multiplies the entire function by 3: g(x) = 3(4x - 2) = 12x - 6." },
+                    { text: "g(x) = -3x", isCorrect: false, rationale: "This is stretched by 3 and reflected." },
+                    { text: "g(x) = x + 3", isCorrect: false, rationale: "The y intercept did not go up 3. Stretching changes the slope." },
+                    { text: "g(x) = x - 3", isCorrect: false, rationale: "The y intercept did not go down 3. Stretching changes the slope." }
+                ],
+                hint: "Multiply the entire expression of f(x) by the stretch factor."
+            },
+            {
+                tag: "Correlation Coefficient (TEKS A.4C)",
+                question: "Students in a math class recorded the number of hours they played video games per week versus their final exam scores. The calculator gave a linear regression equation with r-squared = 0.81 and r = -0.90. What does the value of r tell us?",
+                options: [
+                    { text: "There is a weak positive linear correlation.", isCorrect: false, rationale: "-0.90 is close to -1, indicating a strong correlation, not weak." },
+                    { text: "Playing video games directly causes exam scores to drop.", isCorrect: false, rationale: "Correlation coefficients show association, not strict scientific causation." },
+                    { text: "There is a strong negative linear correlation.", isCorrect: true, rationale: "An r value of -0.90 is close to -1, showing a strong downward linear association between the two variables." },
+                    { text: "Exactly 90 percent of the exam score is explained by video games.", isCorrect: false, rationale: "The coefficient of determination r-squared = 0.81 (81 percent), not r, explains the percent of variation." }
+                ],
+                hint: "Consider both the sign (negative) and how close the value is to -1."
+            },
+            {
+                tag: "Domain & Range (TEKS A.2A)",
+                question: "Given the linear function f(x) = -3x + 5, what is the range if the domain is given as {-1 <= x <= 4}?",
+                options: [
+                    { text: "{-7 <= y <= 8}", isCorrect: true, rationale: "Substitute the boundary x-values: at x = -1, y = 8; at x = 4, y = -7. Since the slope is negative, the range spans from -7 to 8." },
+                    { text: "{-1 <= y <= 4}", isCorrect: false, rationale: "This restates the domain rather than evaluating the function outputs." },
+                    { text: "{-8 <= y <= 7}", isCorrect: false, rationale: "An arithmetic sign error was made when evaluating the endpoints." },
+                    { text: "All real numbers", isCorrect: false, rationale: "Because the domain is restricted to a closed interval, the range is also restricted." }
+                ],
+                hint: "Plug the minimum and maximum domain values into the function to find the corresponding y-values."
+            },
+            // Additional 10 Questions
+            {
+                tag: "Domain & Range (TEKS A.2A)",
+                question: "What is the range of the linear function f(x) = 5x - 3 when the domain is given as {-2, 0, 3}?",
+                options: [
+                    { text: "{-13, -3, 12}", isCorrect: true, rationale: "Substitute each x-value into f(x): 5(-2)-3 = -13, 5(0)-3 = -3, and 5(3)-3 = 12." },
+                    { text: "{-2, 0, 3}", isCorrect: false, rationale: "This is the domain given in the problem, not the resulting outputs." },
+                    { text: "{-10, 0, 15}", isCorrect: false, rationale: "The constant subtraction of 3 was omitted for each output." },
+                    { text: "All real numbers", isCorrect: false, rationale: "Since the domain consists of discrete inputs, the range consists of discrete outputs." }
+                ],
+                hint: "Plug each number from the domain into f(x) to calculate the outputs."
+            },
+            {
+                tag: "Linear Transformations (TEKS A.3E)",
+                question: "If the parent function f(x) = x is transformed into g(x) = x + 4, how does the graph change?",
+                options: [
+                    { text: "Translated 4 units up", isCorrect: true, rationale: "Adding 4 outside the function shifts every point on the graph vertically upward by 4 units." },
+                    { text: "Translated 4 units down", isCorrect: false, rationale: "Subtracting a constant shifts the graph down; adding shifts it up." },
+                    { text: "Translated 4 units left", isCorrect: false, rationale: "A horizontal shift requires adding a constant inside parentheses like f(x+4)." },
+                    { text: "Made steeper by a factor of 4", isCorrect: false, rationale: "The slope remains 1; adding 4 is a vertical shift, not a change in slope." }
+                ],
+                hint: "Adding a constant outside the function moves the graph vertically."
+            },
+            {
+                tag: "Correlation Coefficient (TEKS A.4C)",
+                question: "A scatter plot shows a correlation coefficient of r = 0.82. What type of association does this represent?",
+                options: [
+                    { text: "Strong positive linear association", isCorrect: true, rationale: "An r value of 0.82 is close to 1, indicating a strong positive linear relationship." },
+                    { text: "Strong negative linear association", isCorrect: false, rationale: "Negative correlation coefficients have a minus sign (e.g., r = -0.82)." },
+                    { text: "No linear association", isCorrect: false, rationale: "A value near 0 indicates no correlation, whereas 0.82 is quite high." },
+                    { text: "Perfect linear fit", isCorrect: false, rationale: "A perfect linear fit requires r = 1.0 or r = -1.0." }
+                ],
+                hint: "Check both the sign (positive) and the magnitude (close to 1)."
+            },
+            {
+                tag: "Domain & Range (TEKS A.2A)",
+                question: "A linear function models the total cost in dollars to rent a bowling lane: C(x) = 4x + 15, where x represents the number of hours rented (from 1 to 4 hours). What is a reasonable range?",
+                options: [
+                    { text: "19 <= y <= 31", isCorrect: true, rationale: "Substitute minimum hours (1 hour -> 4(1)+15 = 19) and maximum hours (4 hours -> 4(4)+15 = 31) into the cost function." },
+                    { text: "1 <= x <= 4", isCorrect: false, rationale: "1 <= x <= 4 represents the domain (hours), not the range (cost)." },
+                    { text: "y >= 15", isCorrect: false, rationale: "While 15 is the base fee, the range is bounded by the maximum 4-hour rental limit." },
+                    { text: "All real numbers", isCorrect: false, rationale: "Real-world rental situations have strict time and cost boundaries." }
+                ],
+                hint: "Substitute the minimum and maximum domain values into the cost function to find the range bounds."
+            },
+            {
+                tag: "Linear Transformations (TEKS A.3E)",
+                question: "The parent function f(x) = x is reflected across the x-axis to create g(x). What is the equation for g(x)?",
+                options: [
+                    { text: "g(x) = -x", isCorrect: true, rationale: "Multiplying the entire function by a negative sign reflects the graph across the x-axis." },
+                    { text: "g(x) = x - 1", isCorrect: false, rationale: "Subtracting 1 shifts the graph down 1 unit, not a reflection." },
+                    { text: "g(x) = 1/x", isCorrect: false, rationale: "This represents a rational reciprocal function, not a reflection of the linear parent function." },
+                    { text: "g(x) = x", isCorrect: false, rationale: "g(x) = x is the identical parent function with no transformation." }
+                ],
+                hint: "A reflection across the x-axis negates the slope of the parent function."
+            },
+            {
+                tag: "Correlation Coefficient (TEKS A.4C)",
+                question: "Which correlation coefficient r represents the weakest linear correlation among the choices?",
+                options: [
+                    { text: "r = 0.05", isCorrect: true, rationale: "An r value closest to 0 indicates the weakest linear relationship." },
+                    { text: "r = -0.91", isCorrect: false, rationale: "|-0.91| = 0.91, which is very close to 1 and represents a strong correlation." },
+                    { text: "r = 0.89", isCorrect: false, rationale: "0.89 is close to 1, representing a strong correlation." },
+                    { text: "r = -0.75", isCorrect: false, rationale: "|-0.75| = 0.75, which is moderately strong." }
+                ],
+                hint: "The closer the correlation coefficient is to 0, the weaker the linear relationship."
+            },
+            {
+                tag: "Domain & Range (TEKS A.2A)",
+                question: "What is the domain of the linear function f(x) = -2x + 6 if the range is given as {-2 <= y <= 10}?",
+                options: [
+                    { text: "{-2 <= x <= 4}", isCorrect: true, rationale: "Set y equal to boundaries: -2 = -2x + 6 gives x = 4, and 10 = -2x + 6 gives x = -2. Thus, domain is -2 <= x <= 4." },
+                    { text: "{-2 <= y <= 10}", isCorrect: false, rationale: "This restates the range instead of finding the domain." },
+                    { text: "{0 <= x <= 3}", isCorrect: false, rationale: "An arithmetic calculation error was made when solving for x." },
+                    { text: "All real numbers", isCorrect: false, rationale: "Because the range is restricted, the corresponding domain is also restricted." }
+                ],
+                hint: "Work backwards by substituting the range limits into the function to solve for x."
+            },
+            {
+                tag: "Linear Transformations (TEKS A.3E)",
+                question: "If f(x) = 2x is vertically compressed by a factor of 1/2, what is the new function g(x)?",
+                options: [
+                    { text: "g(x) = x", isCorrect: true, rationale: "Multiplying the function by 1/2 gives g(x) = (1/2)(2x) = x." },
+                    { text: "g(x) = 4x", isCorrect: false, rationale: "Multiplying by 2 would stretch the function, not compress it." },
+                    { text: "g(x) = 2x + 0.5", isCorrect: false, rationale: "Adding a constant shifts the graph vertically rather than compressing it." },
+                    { text: "g(x) = (1/2)x + 2", isCorrect: false, rationale: "Only the function slope should be scaled by the compression factor." }
+                ],
+                hint: "Multiply the function rule by the compression factor of 1/2."
+            },
+            {
+                tag: "Correlation Coefficient (TEKS A.4C)",
+                question: "A calculator computes a linear regression model with a correlation coefficient of r = -0.95. Which statement is true about the data?",
+                options: [
+                    { text: "There is a strong downward trend where as one variable increases, the other decreases.", isCorrect: true, rationale: "A negative r close to -1 indicates a strong inverse relationship." },
+                    { text: "The relationship between the variables is perfectly non-linear.", isCorrect: false, rationale: "The high absolute value of r indicates a strong linear model fit." },
+                    { text: "There is a strong positive correlation between the variables.", isCorrect: false, rationale: "A negative r value denotes a negative (downward) correlation, not positive." },
+                    { text: "The data has no correlation.", isCorrect: false, rationale: "-0.95 is far from 0, signifying a very strong relationship." }
+                ],
+                hint: "A negative coefficient means variables move in opposite directions with high strength."
+            },
+            {
+                tag: "Domain & Range (TEKS A.2A)",
+                question: "A car's fuel tank holds 14 gallons and consumes 0.05 gallons per mile driven. The car is driven until the tank is empty at 280 miles. What is a reasonable domain for the function modeling gallons remaining?",
+                options: [
+                    { text: "0 <= x <= 280", isCorrect: true, rationale: "The domain represents miles driven (x), which starts at 0 miles and ends when the tank is empty at 280 miles." },
+                    { text: "0 <= y <= 14", isCorrect: false, rationale: "0 <= y <= 14 represents the reasonable range (gallons remaining), not the domain." },
+                    { text: "x >= 0", isCorrect: false, rationale: "Driving beyond 280 miles is not possible since the tank would be completely empty." },
+                    { text: "All real numbers", isCorrect: false, rationale: "Real-world fuel limits restrict the domain to a finite interval." }
+                ],
+                hint: "Domain represents the independent variable: miles driven from start to empty."
+            }
+        ];
+
+        let playerName = "";
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let correctCount = 0;
+        let missedQuestions = [];
+        let answeredCurrent = false;
+
+        function safeConfetti(options) {
+            try {
+                if (typeof confetti === 'function') {
+                    confetti(options);
+                }
+            } catch (e) {
+                // Fails silently if offline or blocked by school firewalls
+            }
+        }
+
+        function startGame() {
+            const input = document.getElementById("player-name");
+            playerName = input.value.trim() || "Challenger";
+            
+            document.getElementById("screen-welcome").classList.add("hidden");
+            document.getElementById("screen-quiz").classList.remove("hidden");
+            document.getElementById("stats-bar").classList.remove("hidden");
+            
+            currentQuestionIndex = 0;
+            score = 0;
+            streak = 0;
+            maxStreak = 0;
+            correctCount = 0;
+            missedQuestions = [];
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            answeredCurrent = false;
+            const q = questions[currentQuestionIndex];
+            
+            document.getElementById("current-q-num").innerText = currentQuestionIndex + 1;
+            document.getElementById("progress-bar").style.width = `${((currentQuestionIndex + 1) / questions.length) * 100}%`;
+            document.getElementById("question-tag").innerText = q.tag;
+            document.getElementById("question-text").innerText = q.question;
+            
+            document.getElementById("feedback-box").classList.add("hidden");
+            document.getElementById("btn-next").classList.add("hidden");
+
+            const optionsContainer = document.getElementById("options-container");
+            optionsContainer.innerHTML = "";
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement("button");
+                btn.className = "w-full text-left bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl p-4 text-white transition font-medium flex justify-between items-center group";
+                
+                const spanText = document.createElement("span");
+                spanText.textContent = opt.text;
+                
+                const spanArrow = document.createElement("span");
+                spanArrow.className = "text-xs text-slate-400 group-hover:text-white";
+                spanArrow.textContent = "Select ➔";
+
+                btn.appendChild(spanText);
+                btn.appendChild(spanArrow);
+
+                btn.onclick = () => selectOption(idx, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectOption(selectedIndex, selectedBtn) {
+            if (answeredCurrent) return;
+            answeredCurrent = true;
+
+            const q = questions[currentQuestionIndex];
+            const allButtons = document.getElementById("options-container").children;
+            
+            q.options.forEach((opt, idx) => {
+                const btn = allButtons[idx];
+                btn.disabled = true;
+                if (opt.isCorrect) {
+                    btn.className = "w-full text-left bg-emerald-900/50 border border-emerald-500 rounded-xl p-4 text-emerald-200 font-medium flex justify-between items-center";
+                } else if (idx === selectedIndex) {
+                    btn.className = "w-full text-left bg-rose-900/50 border border-rose-500 rounded-xl p-4 text-rose-200 font-medium flex justify-between items-center";
+                } else {
+                    btn.className = "w-full text-left bg-slate-800 border border-slate-700 rounded-xl p-4 text-slate-500 font-medium flex justify-between items-center opacity-50";
+                }
+            });
+
+            const isCorrect = q.options[selectedIndex].isCorrect;
+            const feedbackBox = document.getElementById("feedback-box");
+            const feedbackTitle = document.getElementById("feedback-title");
+            const feedbackRationale = document.getElementById("feedback-rationale");
+
+            feedbackBox.classList.remove("hidden");
+
+            if (isCorrect) {
+                correctCount++;
+                streak++;
+                if (streak > maxStreak) maxStreak = streak;
+                const points = 100 + (streak * 15);
+                score += points;
+
+                feedbackBox.className = "mb-6 p-4 rounded-xl border border-emerald-500/50 bg-emerald-950/40 text-sm";
+                feedbackTitle.className = "font-bold text-emerald-400 mb-1";
+                feedbackTitle.innerText = `Correct! (+${points} pts)`;
+                feedbackRationale.innerText = q.options[selectedIndex].rationale;
+
+                if (currentQuestionIndex === questions.length - 1) {
+                    safeConfetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+                }
+            } else {
+                streak = 0;
+                missedQuestions.push({
+                    question: q.question,
+                    userAnswer: q.options[selectedIndex].text,
+                    correctAnswer: q.options.find(o => o.isCorrect).text,
+                    rationale: q.options[selectedIndex].rationale
+                });
+
+                feedbackBox.className = "mb-6 p-4 rounded-xl border border-rose-500/50 bg-rose-950/40 text-sm";
+                feedbackTitle.className = "font-bold text-rose-400 mb-1";
+                feedbackTitle.innerText = "Incorrect";
+                feedbackRationale.innerText = q.options[selectedIndex].rationale;
+            }
+
+            document.getElementById("current-score").innerText = score;
+            document.getElementById("current-streak").innerText = `🔥 ${streak}`;
+            document.getElementById("btn-next").classList.remove("hidden");
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                loadQuestion();
+            } else {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            document.getElementById("screen-quiz").classList.add("hidden");
+            document.getElementById("stats-bar").classList.add("hidden");
+            document.getElementById("screen-gameover").classList.remove("hidden");
+
+            document.getElementById("final-player-name").innerText = `Great battle, ${playerName}!`;
+            document.getElementById("final-score").innerText = `${score} pts`;
+            document.getElementById("final-correct").innerText = correctCount;
+            document.getElementById("final-streak").innerText = maxStreak;
+
+            const reviewBtn = document.getElementById("btn-review");
+            if (missedQuestions.length > 0) {
+                reviewBtn.classList.remove("hidden");
+            } else {
+                reviewBtn.classList.add("hidden");
+            }
+
+            if (correctCount >= 15) {
+                safeConfetti({ particleCount: 200, spread: 120, origin: { y: 0.5 } });
+            }
+        }
+
+        function reviewMistakes() {
+            document.getElementById("screen-gameover").classList.add("hidden");
+            document.getElementById("screen-review").classList.remove("hidden");
+
+            const reviewList = document.getElementById("review-list");
+            reviewList.innerHTML = "";
+
+            missedQuestions.forEach((item, idx) => {
+                const card = document.createElement("div");
+                card.className = "bg-slate-900 border border-slate-700 rounded-xl p-4 text-sm";
+                card.innerHTML = `
+                    <div class="font-semibold text-white mb-2">Q${idx + 1}: ${item.question}</div>
+                    <div class="text-rose-400 mb-1">Your Answer: ${item.userAnswer}</div>
+                    <div class="text-emerald-400 mb-2">Correct Answer: ${item.correctAnswer}</div>
+                    <div class="text-slate-400 text-xs italic">Why: ${item.rationale}</div>
+                `;
+                reviewList.appendChild(card);
+            });
+        }
+
+        function backToGameOver() {
+            document.getElementById("screen-review").classList.add("hidden");
+            document.getElementById("screen-gameover").classList.remove("hidden");
+        }
+
+        function resetGame() {
+            document.getElementById("screen-gameover").classList.add("hidden");
+            document.getElementById("screen-welcome").classList.remove("hidden");
+            document.getElementById("player-name").value = "";
+        }
+    </script>
+</body>
+</html>
